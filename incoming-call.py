@@ -89,22 +89,6 @@
         except Exception as e:
             print("Error executing command: {}".format(e))
 
-    def perform_task(connection, message):
-        if "Event: Newchannel" in message and "State: Ring" in message:
-            # Extract the CallerIDNum from the matching event
-            caller_id_num = message.split('\n')[4].split(': ')[1]
-            print("Newchannel State: Ring - CallerIDNum: {}".format(caller_id_num))
-
-            # Generate the audio message based on the CallerIDNum
-            digits = list(caller_id_num)
-            print("Digits before audio generation:", digits)
-            generate_audio_message(digits)
-
-            # Run the Asterisk command
-            asterisk_command = "asterisk -rx 'rpt localplay $NODE1 /tmp/incoming-call'"
-            send_command(connection, asterisk_command)
-
-
     def main():
         connection = connect_to_asterisk_manager(username, password, asterisk_server_ip)
 
