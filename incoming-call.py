@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import os
+import time
 
 # Replace with your Asterisk Manager credentials
 username = 'admin'
@@ -23,7 +24,7 @@ def generate_audio_message(digits):
     except subprocess.CalledProcessError as e:
         print("Error generating audio file: {}".format(e))
 
-
+import time
 
 def connect_to_asterisk_manager(username, password, server_ip, server_port=5038):
     try:
@@ -39,10 +40,16 @@ def connect_to_asterisk_manager(username, password, server_ip, server_port=5038)
             login_command = "Action: Login\r\nUsername: {}\r\nSecret: {}\r\n\r\n".format(username, password)
             connection.sendall(login_command.encode('utf-8'))
 
+            print("Login command sent")
+
+            # Introduce a small delay to allow the response to be fully received
+            time.sleep(0.5)
+
             # Read the login response
             login_response = connection.recv(4096).decode('utf-8')
 
             if "Authentication accepted" in login_response:
+                print("Successfully logged in.")
                 return connection
 
     except Exception as e:
@@ -75,33 +82,26 @@ def monitor_messages(connection):
                 asterisk_command = "asterisk -rx 'rpt localplay {} /tmp/incoming-call'".format(NODE)
                 os.system(asterisk_command)
                 print("Asterisk command executed: {}".format(asterisk_command.strip()))
-                
+
     except KeyboardInterrupt:
         print("Monitoring interrupted by user.")
     except Exception as e:
         print("Error monitoring Asterisk Manager Interface: {}".format(e))
 
-def send_command(command):
-    try:
-        # Run the command using subprocess
-        subprocess.run(command, shell=True)
-        print("Command executed: {}".format(command.strip()))
-    except Exception as e:
-        print("Error executing command: {}".format(e))
-
-
 def main():
-    connection = connect_to_asterisk_manager(username, password, asterisk_server_ip)
+    while True:
+        connection = connect_to_asterisk_manager(username, password, asterisk_server_ip)
 
-    if connection:
-        print("Connected to Asterisk Manager Interface.")
+        if connection:
+            print("Connected to Asterisk Manager Interface.")
 
-        # Start monitoring messages
-        monitor_messages(connection)
+            # Start monitoring messages
+            monitor_messages(connection)
 
-        # The script will keep running until interrupted by the user
-        connection.close()
-        print("Disconnected.")
+            # The script will keep running until interrupted by the user
+            connection.close()
+            print("Disconnected. Reconnecting in 5 seconds.")
+            time.sleep(5)  # Wait for 5 seconds before attempting to reconnect
 
 
 if __name__ == "__main__":
